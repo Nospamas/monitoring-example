@@ -20,7 +20,7 @@ Monitoring for general services (cpu temp, hdd space, memory allocation etc) is 
 
 Deployment is handled via Ansible playbooks with additional automation provided by Ansible Semaphore and Teamcity (not fully included here). These playbooks are configurable with environment variables using a per-system environment file in the projects folder `/projects/monitoring-enviro/hosts` and the use of ansible's templating. Additionally the idempotent nature of ansible tasks allows me to configure database and users that should be present in order for the monitoring to function correctly.
 
-Finally, in order to make use of the monitored data a Grafana instance runs on the homelab core and makes use of the nginx ingress to provide web traffic. Currently this is only internally accessible as it is not set up on my internal ingress. I've added more information into [Grafana.md](./grafana.md). Grafana could also be used for alerting for major changes in either hardware or environment sensors however I have not yet set this up.
+Finally, in order to make use of the monitored data a Grafana instance runs on the homelab core and makes use of the nginx ingress to provide web traffic. Currently this is only internally accessible as it is not set up on my internal ingress. I've added more information into [Grafana.md](./Grafana.md). Grafana could also be used for alerting for major changes in either hardware or environment sensors however I have not yet set this up.
 
 ## Hardware:
 
