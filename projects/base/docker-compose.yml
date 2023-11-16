@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  ## service container defaults
+  application:
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "25m"
+        max-file: "5"
+    ## DNS seems to be a bit wierd with docker so I'm fixing it to use my pihole IPs for internal resolution
+    dns:
+      - 192.168.1.1
+      - 192.168.1.5

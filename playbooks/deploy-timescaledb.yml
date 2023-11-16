@@ -1,0 +1,37 @@
+---
+# Deploy Forward-Node nginx updates.
+- name: Deploy Forward-Node nginx updates
+  hosts: venus
+  become: true
+  vars:
+    project_dir: "../projects/timescaledb/files/"
+    compose_dir: "/etc/docker-compose/timescaledb/"
+    project_base_dir: "../projects/base/"
+    base_dir: "/etc/docker-compose/base/"
+
+  tasks:
+    - name: Ensure Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ compose_dir }}"
+        - "{{ base_dir }}"
+
+    - name: Copy latest config files
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: "0755"
+      loop:
+        - src: "{{ project_dir }}"
+          dest: "{{ compose_dir }}"
+        - src: "{{ project_base_dir }}"
+          dest: "{{ base_dir }}"
+
+    - name: Start Docker Compose
+      community.docker.docker_compose:
+        project_name: timescaledb
+        project_src: "{{ compose_dir }}"
+        state: present

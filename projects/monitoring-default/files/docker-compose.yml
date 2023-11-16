@@ -1,0 +1,20 @@
+version: "3.8"
+
+networks:
+  monitoring-network:
+    driver: bridge
+
+services:
+  telegraf:
+    extends:
+      file: ../base/docker-compose.yml
+      service: application
+    image: telegraf:latest
+    container_name: telegraf
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:rw
+      - /:/mnt/root:ro
+    restart: unless-stopped
+    env_file:
+      - .env
+    

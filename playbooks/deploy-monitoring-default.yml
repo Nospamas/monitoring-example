@@ -1,0 +1,56 @@
+---
+- name: Deploy home ingress node nginx updates
+  hosts: node1,node5,octopi
+  become: true
+
+  vars:
+    project_dir: "../projects/monitoring-default/"
+    compose_dir: "/etc/docker-compose/monitoring-default/"
+    project_base_dir: "../projects/base/"
+    base_dir: "/etc/docker-compose/base/"
+
+  tasks:
+    - name: Ensure Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0775"
+      loop:
+        - "{{ compose_dir }}"
+        - "{{ base_dir }}"
+
+    - name: Copy latest config files
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: "0755"
+      loop:
+        - src: "{{ project_dir }}files/"
+          dest: "{{ compose_dir }}"
+        - src: "{{ project_base_dir }}"
+          dest: "{{ base_dir }}"
+
+    - name: Add ENV vars
+      ansible.builtin.include_vars:
+        file: "{{ project_dir }}hosts/{{ inventory_hostname }}.environment.yml"
+
+    - name: Set Environment Variables
+      ansible.builtin.template:
+        src: "{{ project_dir }}files/.env.ansible.j2"
+        dest: "{{ compose_dir }}.env"
+        mode: "0755"
+
+    - name: Start Docker Compose
+      community.docker.docker_compose:
+        project_src: "{{ compose_dir }}"
+        pull: true
+        state: present
+      when: inventory_hostname != 'node5'
+
+    - name: Reload pihole to apply changes
+      ansible.builtin.command:
+        chdir: "{{ compose_dir }}"
+        cmd: "docker compose up -d --force-recreate"
+      register: reload_nginx
+      changed_when: "'signal process started' in reload_nginx.stdout"
+      when: inventory_hostname == 'node5'

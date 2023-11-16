@@ -1,0 +1,24 @@
+services:
+  # The incoming server node
+  nginx:
+    extends:
+      file: ../base/docker-compose.yml
+      service: application
+    image: nginx:latest
+    container_name: home_ingress_nginx
+    ports:
+      - "4591:4591" ## External (Internet) Traffic Port
+      - "443:443" ## Local Traffic port
+    restart: always
+    volumes:
+      # nginx config
+      - "./conf/:/etc/nginx/conf.d/:ro"
+      # certbot certificates directory
+      - ./certificates/:/etc/nginx/ssl/:ro
+      # web root
+      - "./www:/www:ro"
+    networks:
+      - nginx_home_ingress-network ## Network that allows other services to be accessed via HTTP
+networks:
+  nginx_home_ingress-network:
+    external: true

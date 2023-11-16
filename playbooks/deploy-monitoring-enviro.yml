@@ -1,0 +1,48 @@
+---
+- name: Deploy home ingress node nginx updates
+  hosts: sensors
+  become: true
+
+  vars:
+    project_dir: "../projects/monitoring-enviro/"
+    compose_dir: "/etc/docker-compose/monitoring-enviro/"
+    project_base_dir: "../projects/base/"
+    base_dir: "/etc/docker-compose/base/"
+
+  tasks:
+    - name: Ensure Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0775"
+      loop:
+        - "{{ compose_dir }}"
+        - "{{ base_dir }}"
+
+    - name: Copy latest config files
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: "0755"
+      loop:
+        - src: "{{ project_dir }}files/"
+          dest: "{{ compose_dir }}"
+        - src: "{{ project_base_dir }}"
+          dest: "{{ base_dir }}"
+
+    - name: Add ENV vars
+      ansible.builtin.include_vars:
+        file: "{{ project_dir }}hosts/{{ inventory_hostname }}.environment.yml"
+
+    - name: Set Environment Variables
+      ansible.builtin.template:
+        src: "{{ project_dir }}files/.env.ansible.j2"
+        dest: "{{ compose_dir }}.env"
+        mode: "0755"
+
+
+    - name: Start Docker Compose
+      community.docker.docker_compose:
+        project_src: "{{ compose_dir }}"
+        recreate: "always"
+        state: present

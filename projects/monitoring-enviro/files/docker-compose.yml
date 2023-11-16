@@ -1,0 +1,36 @@
+version: "3.8"
+
+networks:
+  monitoring-network:
+    driver: bridge
+
+services:
+  telegraf:
+    extends:
+      file: ../base/docker-compose.yml
+      service: application
+    image: telegraf:latest
+    container_name: telegraf
+    networks:
+      - monitoring-network
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:rw
+      - /:/mnt/root:ro
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - enviro_plus_flask
+  enviro_plus_flask:
+    extends:
+      file: ../base/docker-compose.yml
+      service: application
+    privileged: true
+    image: registry.cansk.net/enviro-plus-flask:latest
+    container_name: enviro_plus_flask
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    env_file:
+      - .env
+    

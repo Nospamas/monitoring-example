@@ -1,0 +1,50 @@
+
+networks:
+  monitoring-network:
+    driver: bridge
+  timescaledb_timescaledb-network:
+    external: true
+  nginx_home_ingress-network:
+    external: true
+
+services:
+  # The incoming server node
+  telegraf:
+    extends:
+      file: ../base/docker-compose.yml
+      service: application
+    image: telegraf:latest
+    container_name: telegraf
+    networks:
+      - monitoring-network
+      - timescaledb_timescaledb-network
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:rw
+      - /mnt/disk1:/mnt/disk1
+      - /mnt/disk2:/mnt/disk2
+      - /mnt/pdisk1:/mnt/pdisk1
+      - /mnt/storage:/mnt/storage
+      - /mnt/ssd:/mnt/ssd
+      - /:/mnt/root:ro
+    restart: unless-stopped
+    env_file:
+      - .env
+  grafana:
+    extends:
+      file: ../base/docker-compose.yml
+      service: application
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    environment:
+      - GF_SERVER_DOMAIN=grafana.cansk.net
+    networks:
+      - monitoring-network
+      - timescaledb_timescaledb-network
+      - nginx_home_ingress-network
+    volumes:
+      - ./grafana-storage:/var/lib/grafana:rw
+      - ./grafana-logs:/var
+    restart: unless-stopped
+    ports:
+      - 8082:3000
+    # eehumVa58JpAB8J8ECvm

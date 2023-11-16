@@ -1,0 +1,5 @@
+## These are non-environment monitoring nodes, this remains as an example.
+
+---
+ENV_TELEGRAF_HOSTNAME: pihole1
+ENV_TELEGRAF_INTERVAL: 10

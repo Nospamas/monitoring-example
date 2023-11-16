@@ -1,0 +1,86 @@
+---
+- name: Deploy home ingress node nginx updates
+  hosts: venus
+  become: true
+
+  vars:
+    postgres_password: "secret"
+    monitoring_password: "secret"
+    project_dir: "../projects/monitoring-server/files/"
+    compose_dir: "/etc/docker-compose/monitoring-server/"
+    project_base_dir: "../projects/base/"
+    base_dir: "/etc/docker-compose/base/"
+    certificates_dir: "/mnt/ssd/certificates/"
+
+  tasks:
+    - name: Ensure Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0775"
+      loop:
+        - "{{ compose_dir }}"
+        - "{{ base_dir }}"
+
+    - name: Copy latest config files
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: "0755"
+      loop:
+        - src: "{{ project_dir }}"
+          dest: "{{ compose_dir }}"
+        - src: "{{ project_base_dir }}"
+          dest: "{{ base_dir }}"
+
+    - name: Copy latest certificates
+      ansible.builtin.copy:
+        src: "{{ certificates_dir }}"
+        dest: "{{ compose_dir }}/certificates/"
+        mode: "0600"
+
+    - name: "Add monitoring user to postgres"
+      community.postgresql.postgresql_user:
+        name: monitoring
+        password: "{{ monitoring_password }}"
+        login_host: localhost
+        login_user: postgres
+        login_password: "{{ postgres_password }}"
+
+    - name: "Create postgres database for monitoring"
+      community.postgresql.postgresql_db:
+        name: monitoring
+        owner: monitoring
+        encoding: UTF-8
+        lc_collate: en_US.UTF-8
+        lc_ctype: en_US.UTF-8
+        template: template0
+        state: present
+        login_host: localhost
+        login_user: postgres
+        login_password: "{{ postgres_password }}"
+
+    - name: "Add telegraf schema"
+      community.postgresql.postgresql_schema:
+        name: telegraf
+        database: monitoring
+        owner: monitoring
+        login_host: localhost
+        login_user: postgres
+        login_password: "{{ postgres_password }}"
+        state: present
+
+    - name: "Add timescaledb extension to database"
+      community.postgresql.postgresql_ext:
+        name: timescaledb
+        db: monitoring
+        login_host: localhost
+        login_user: postgres
+        login_password: "{{ postgres_password }}"
+        state: present
+
+    - name: Start Docker Compose
+      community.docker.docker_compose:
+        project_src: "{{ compose_dir }}"
+        recreate: "always"
+        state: present
